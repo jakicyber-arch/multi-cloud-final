@@ -11,12 +11,14 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-# DEIN NEUER BOT TOKEN
+# ==========================================
+# DEIN NEUER BOT TOKEN IST HIER EINGETRAGEN
+# ==========================================
 BOT_TOKEN = '8896711896:AAGTjm87X_Gr86JTEJcg3xk4zfC2vWH1IZI'
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # ==========================================
-# DEINE SUPABASE DATEN (BEREITS EINGETRAGEN)
+# DEINE SUPABASE DATEN SIND HIER EINGETRAGEN
 # ==========================================
 SUPABASE_URL = "https://drrbibjafmqcxqhxswfy.supabase.co" 
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRycmJpYmphZm1xY3hxaHhzd2Z5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzQ2NjQ2NiwiZXhwIjoyMTA5MDQyNDY2fQ.XElFDbLqZT_bbRP9EomuZlH7gbflUni46fvGvm9hleo"
