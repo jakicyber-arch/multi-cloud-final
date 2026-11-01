@@ -14,9 +14,12 @@ app = Flask(__name__)
 # DEIN GODDROP BOT TOKEN
 BOT_TOKEN = '8980059554:AAGi4797fL5HA4HIfFO74HFhEEmt6A2OoUQ'
 
-# LÖSCHT ALLE ALTEN VERBINDUNGEN BEVOR DER BOT STARTET
-requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset=-1")
-time.sleep(2)
+# LÖSCHT ALLE ALTEN VERBINDUNGEN BEVOR DER BOT STARTET (Verhindert 409 Fehler)
+try:
+    requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset=-1", timeout=5)
+    time.sleep(2)
+except:
+    pass
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
