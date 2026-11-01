@@ -3,62 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi Cloud Drop</title>
+    <title>Netflix Link Drop</title>
     <style>
         body { background: #0f0f11; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .container { background: #18181b; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid #27272a; text-align: center; }
         input { width: 90%; padding: 12px; background: #09090b; border: 1px solid #3f3f46; color: #fff; border-radius: 6px; margin-bottom: 15px; text-align: center; font-size: 16px; text-transform: uppercase; }
-        button { width: 100%; padding: 14px; background: #e50914; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; color: white; }
         .hidden { display: none; }
-        .meta-box { background: #27272a; padding: 15px; border-radius: 6px; margin-top: 15px; text-align: left; font-size: 14px; border-left: 4px solid #e50914; }
-        .meta-row { margin-bottom: 8px; border-bottom: 1px solid #3f3f46; padding-bottom: 5px; }
-        .meta-row:last-child { border: none; }
+        .btn-red { background: #e50914; }
         .btn-green { background: #22c55e; }
         .btn-orange { background: #f59e0b; }
-        .platform-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px; background: #3f3f46; }
+        .link-box { background: #27272a; padding: 15px; border-radius: 6px; margin: 15px 0; font-size: 12px; word-break: break-all; border-left: 4px solid #22c55e; text-align: left; color: #a1a1aa; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Multi Cloud</h1>
+        <h1>Netflix Link</h1>
         <div id="input-view">
             <input type="text" id="key-input" placeholder="CLM-XXXXXX">
-            <button onclick="claim()">Einlösen</button>
+            <button class="btn-red" onclick="claim()">Einlösen</button>
             <p id="err-msg" class="hidden" style="color:#ef4444; font-size:14px;"></p>
         </div>
+        
         <div id="result-view" class="hidden">
-            <p style="color:#22c55e; font-weight: bold; margin-top:0;">Erfolgreich eingelöst!</p>
-            <div id="platform-badge" class="platform-badge"></div>
-            <div class="meta-box" id="meta-box"></div>
-            <button onclick="openLink()" class="btn-green">Öffnen</button>
-            <button onclick="copyData()" class="btn-orange">Daten kopieren</button>
+            <p style="color:#22c55e; font-weight: bold; margin-top:0;">Dein Account ist bereit!</p>
+            <div class="link-box" id="link-display"></div>
+            
+            <button class="btn-green" onclick="openLink()">🚀 Netflix öffnen</button>
+            <button class="btn-orange" onclick="replaceAccount()">🔄 Account tot? Ersetzen</button>
+            <p id="replace-msg" class="hidden" style="color:#22c55e; font-size:14px; margin-top: 10px;"></p>
         </div>
     </div>
+
     <script>
-        let currentData = "";
+        let currentKey = "";
+        let currentLink = "";
+
+        window.onload = function() {
+            const savedKey = localStorage.getItem('netflix_key');
+            if (savedKey) {
+                document.getElementById('key-input').value = savedKey;
+                claim(); 
+            }
+        }
+
         async function claim() {
-            const key = document.getElementById('key-input').value.trim();
-            const res = await fetch('/api/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) });
+            currentKey = document.getElementById('key-input').value.trim();
+            localStorage.setItem('netflix_key', currentKey); 
+
+            const res = await fetch('/api/claim', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: currentKey })
+            });
             const data = await res.json();
+            
             if (data.success) {
                 document.getElementById('input-view').classList.add('hidden');
                 document.getElementById('result-view').classList.remove('hidden');
-                currentData = data.data;
-                document.getElementById('platform-badge').innerText = data.platform.toUpperCase();
-                let passHtml = data.meta.password ? `<div class="meta-row"><span>Passwort:</span> <b style="color:#f59e0b">${data.meta.password}</b></div>` : '';
-                document.getElementById('meta-box').innerHTML = `
-                    <div class="meta-row"><span>E-Mail:</span> <b>${data.meta.email || 'Hidden'}</b></div>
-                    ${passHtml}
-                    <div class="meta-row"><span>Land:</span> <b>${data.meta.country || 'Unknown'}</b></div>
-                    <div class="meta-row"><span>Abo:</span> <b>${data.meta.plan || 'Premium'}</b></div>
-                `;
+                currentLink = data.data;
+                document.getElementById('link-display').innerText = currentLink;
             } else {
-                document.getElementById('err-msg').innerText = data.msg;
-                document.getElementById('err-msg').classList.remove('hidden');
+                const err = document.getElementById('err-msg');
+                err.innerText = data.msg;
+                err.classList.remove('hidden');
+                localStorage.removeItem('netflix_key'); 
             }
         }
-        function openLink() { if(currentData.startsWith('http')) window.open(currentData, '_blank'); else alert("Nutze Daten kopieren!"); }
-        function copyData() { navigator.clipboard.writeText(currentData); alert("Kopiert!"); }
+
+        function openLink() {
+            if (currentLink) window.open(currentLink, '_blank');
+        }
+
+        async function replaceAccount() {
+            const msg = document.getElementById('replace-msg');
+            msg.classList.add('hidden');
+            
+            const res = await fetch('/api/replace', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: currentKey })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                currentLink = data.data;
+                document.getElementById('link-display').innerText = currentLink;
+                msg.innerText = "Account erfolgreich ersetzt!";
+                msg.style.color = "#22c55e";
+                msg.classList.remove('hidden');
+            } else {
+                msg.innerText = data.msg;
+                msg.style.color = "#ef4444";
+                msg.classList.remove('hidden');
+            }
+        }
     </script>
 </body>
 </html>
