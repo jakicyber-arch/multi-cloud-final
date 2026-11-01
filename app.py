@@ -1,13 +1,26 @@
-import requests
-import re
+import threading
 import time
+import re
+import json
 import os
+import random
+import telebot
+from flask import Flask, request, jsonify, render_template
+import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 
-# PC BOT TOKEN
-BOT_TOKEN = '9065030505:AAESuIx6VRBd2Bq4ZBMWw9r9Ac2MQTdXRtM'
+app = Flask(__name__)
+
+BOT_TOKEN = '8980059554:AAGi4797fL5HA4HIfFO74HFhEEmt6A2OoUQ'
 CHAT_ID = '6584278242'
+
+try:
+    requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset=-1", timeout=5)
+    time.sleep(2)
+except: pass
+
+bot = telebot.TeleBot(BOT_TOKEN)
 
 SUPABASE_URL = "https://drrbibjafmqcxqhxswfy.supabase.co" 
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRycmJpYmphZm1xY3hxaHhzd2Z5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzQ2NjQ2NiwiZXhwIjoyMTA5MDQyNDY2fQ.XElFDbLqZT_bbRP9EomuZlH7gbflUni46fvGvm9hleo"
@@ -31,51 +44,20 @@ def test_link(link):
     except: pass
     return False
 
-def fake_hacker_logs():
-    os.system('color 0a')
-    print("=============================================")
-    print(" [ PC GRABBER - CLOUD UPLOAD MODE ] ")
-    print("=============================================")
-    time.sleep(0.5)
-    print("[*] Connecting to Supabase Cloud...")
-    time.sleep(0.3)
-    print("[*] Access Granted. Searching Everything...\n")
-
-def upload_to_cloud(valid_items):
-    if not valid_items: return
-    
-    for item in valid_items:
-        try:
-            newKey = 'CLM-' + os.urandom(4).hex().upper()
-            meta = {"email": "NFToken Link", "password": None, "country": "Unknown", "plan": "Premium", "profiles": []}
-            
-            r = requests.post(f"{SUPABASE_URL}/rest/v1/keys", headers=get_headers(), json={"key": newKey, "data": item, "metadata": meta, "used": False, "platform": "netflix"})
-            
-            if r.status_code == 201:
-                print(f"[+] CLOUD UPLOAD: {newKey}")
-                try:
-                    requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": f"🚨 **PC FUND!**\n\n{newKey}", "parse_mode": "Markdown"})
-                except: pass
-            else:
-                print(f"[-] Cloud Fehler: {r.status_code}")
-        except Exception as e:
-            print(f"[-] Upload Error: {e}")
-
 def scan_telegram(channel):
     found = []
     try:
-        print(f"[*] Scanning TG: @{channel}")
         r = requests.get(f"https://t.me/s/{channel}", timeout=5, headers={'User-Agent': 'Mozilla/5.0'})
         for m in PATTERN.findall(r.text):
             link = clean_link(m)
-            if link and test_link(link): found.append(link)
+            if link and test_link(link): 
+                found.append(link)
     except Exception: pass 
     return found
 
 def scan_duckduckgo():
     found = []
     try:
-        print("[*] Scanne DuckDuckGo...")
         q = 'site:pastebin.com "nftoken="'
         r = requests.get(f"https://html.duckduckgo.com/html/?q={q}", timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
         soup = BeautifulSoup(r.text, 'html.parser')
@@ -87,40 +69,74 @@ def scan_duckduckgo():
                 if raw_r.status_code == 200:
                     for m in PATTERN.findall(raw_r.text):
                         link = clean_link(m)
-                        if link and test_link(link): found.append(link)
+                        if link and test_link(link): 
+                            found.append(link)
     except Exception: pass
     return found
 
-if __name__ == '__main__':
-    fake_hacker_logs()
-    
+def grabber_loop():
     while True:
+        found_raw = []
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            results = executor.map(scan_telegram, TELEGRAM_CHANNELS)
+            for res in results: found_raw.extend(res)
+        found_raw.extend(scan_duckduckgo())
+        found_raw = list(set(found_raw)) 
+        
+        if found_raw:
+            for item in found_raw:
+                check = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=eq.{item}", headers=get_headers())
+                if check.status_code == 200 and not check.json():
+                    meta = {"email": "NFToken Link", "password": None, "country": "Unknown", "plan": "Premium", "profiles": []}
+                    newKey = 'CLM-' + os.urandom(4).hex().upper()
+                    requests.post(f"{SUPABASE_URL}/rest/v1/keys", headers=get_headers(), json={"key": newKey, "data": item, "metadata": meta, "used": False, "platform": "netflix"})
+                    try: requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": f"🚨 **NEUER LINK!**\n\n{newKey}", "parse_mode": "Markdown"})
+                    except: pass
+        time.sleep(60)
+
+def bot_loop():
+    @bot.message_handler(commands=['start', 'key'])
+    def send_key(message):
         try:
-            print(f"\n[{time.strftime('%H:%M:%S')}] Starte Scan...")
-            found_raw = []
-            
-            with ThreadPoolExecutor(max_workers=10) as executor:
-                results = executor.map(scan_telegram, TELEGRAM_CHANNELS)
-                for res in results:
-                    found_raw.extend(res)
-                    
-            found_raw.extend(scan_duckduckgo())
-            found_raw = list(set(found_raw)) 
-            
-            if found_raw:
-                valid = []
-                for item in found_raw:
-                    if test_link(item): valid.append(item)
-                
-                if valid:
-                    print(f"[+] {len(valid)} Links gefunden! Lade in die Cloud...")
-                    upload_to_cloud(valid)
-            else:
-                print("[-] Keine Links gefunden.")
-                
-            print(f"[*] Warte 60 Sekunden...")
-            time.sleep(60)
-            
-        except Exception as e:
-            print(f"[-] Fehler: {e}")
-            time.sleep(30)
+            r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.netflix&limit=1", headers=get_headers())
+            if r.status_code == 200 and r.json():
+                bot.reply_to(message, f"Dein Key: `{r.json()[0]['key']}`\n\nLöse ihn ein: https://multi-cloud-final.onrender.com", parse_mode='Markdown')
+            else: bot.reply_to(message, "❌ Keine Links verfügbar.")
+        except: pass
+    bot.polling(non_stop=True)
+
+threading.Thread(target=grabber_loop, daemon=True).start()
+threading.Thread(target=bot_loop, daemon=True).start()
+
+@app.route('/')
+def home(): return render_template('index.html')
+
+@app.route('/api/claim', methods=['POST'])
+def claim():
+    data = request.json
+    key = data.get('key')
+    r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?key=eq.{key}&data=not.is.null", headers=get_headers())
+    if r.status_code == 200 and r.json():
+        k = r.json()[0]
+        return jsonify({"success": True, "data": k['data'], "platform": "netflix"})
+    return jsonify({"success": False, "msg": "Key ungültig oder nicht gefunden!"})
+
+@app.route('/api/replace', methods=['POST'])
+def replace():
+    data = request.json
+    old_key = data.get('key')
+    
+    r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.netflix&key=neq.{old_key}&limit=1", headers=get_headers())
+    if r.status_code == 200 and r.json():
+        new_acc = r.json()[0]
+        new_link = new_acc['data']
+        
+        requests.patch(f"{SUPABASE_URL}/rest/v1/keys?key=eq.{old_key}", headers=get_headers(), json={"data": new_link})
+        requests.delete(f"{SUPABASE_URL}/rest/v1/keys?id=eq.{new_acc['id']}", headers=get_headers())
+        
+        return jsonify({"success": True, "data": new_link})
+    
+    return jsonify({"success": False, "msg": "Keine Ersatz-Links verfügbar!"})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
