@@ -82,6 +82,7 @@ def bot_loop():
     @bot.message_handler(commands=['start', 'key'])
     def send_key(message):
         try:
+            # Sucht einen komplett neuen Key, der noch nie benutzt wurde
             r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.netflix&limit=1", headers=get_headers())
             if r.status_code == 200 and r.json():
                 bot.reply_to(message, f"Dein Key: `{r.json()[0]['key']}`\n\nLöse ihn ein: https://multi-cloud-final.onrender.com", parse_mode='Markdown')
@@ -98,10 +99,15 @@ def home(): return render_template('index.html')
 @app.route('/api/claim', methods=['POST'])
 def claim():
     data = request.json
-    r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?key=eq.{data.get('key')}&data=not.is.null", headers=get_headers())
+    key = data.get('key')
+    
+    # Prüft ob der Key existiert
+    r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?key=eq.{key}&data=not.is.null", headers=get_headers())
     if r.status_code == 200 and r.json():
         k = r.json()[0]
+        # WICHTIG: 'used' wird hier NICHT auf True gesetzt. Der Key bleibt für immer gültig.
         return jsonify({"success": True, "data": k['data'], "platform": "netflix"})
+        
     return jsonify({"success": False, "msg": "Key ungültig oder nicht gefunden!"})
 
 @app.route('/api/replace', methods=['POST'])
@@ -109,12 +115,17 @@ def replace():
     data = request.json
     old_key = data.get('key')
     
+    # 1. Finde einen komplett neuen Link, der nicht der alte ist
     r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.netflix&key=neq.{old_key}&limit=1", headers=get_headers())
+    
     if r.status_code == 200 and r.json():
         new_acc = r.json()[0]
         new_link = new_acc['data']
         
+        # 2. Update den alten Key mit dem neuen Link (Der Key bleibt für immer bestehen)
         requests.patch(f"{SUPABASE_URL}/rest/v1/keys?key=eq.{old_key}", headers=get_headers(), json={"data": new_link})
+        
+        # 3. Lösche den temporären neuen Key aus der DB, damit er nicht doppelt existiert
         requests.delete(f"{SUPABASE_URL}/rest/v1/keys?id=eq.{new_acc['id']}", headers=get_headers())
         
         return jsonify({"success": True, "data": new_link})
