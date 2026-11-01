@@ -22,9 +22,9 @@ except: pass
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# HIER DEINEN SERVICE_ROLE KEY EINTRAGEN (fängt mit eyJ... an)
+# DEINE SUPABASE DATEN MIT DEM SERVICE_ROLE KEY
 SUPABASE_URL = "https://drrbibjafmqcxqhxswfy.supabase.co" 
-SUPABASE_KEY = "DEIN_SERVICE_ROLE_KEY"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRycmJpYmphZm1xY3hxaHhzd2Z5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzQ2NjQ2NiwiZXhwIjoyMTA5MDQyNDY2fQ.XElFDbLqZT_bbRP9EomuZlH7gbflUni46fvGvm9hleo"
 
 def get_headers():
     return {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "return=representation"}
