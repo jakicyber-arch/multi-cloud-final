@@ -60,10 +60,10 @@
 
     <div id="view-result" class="hidden">
         <div class="info-box">
+            <div class="info-row"><span>Typ:</span> <span id="res-type">-</span></div>
             <div class="info-row"><span>E-Mail:</span> <span id="res-email">Versteckt</span></div>
+            <div class="info-row"><span>Passwort:</span> <span id="res-pass">-</span></div>
             <div class="info-row"><span>Land:</span> <span id="res-country">Unbekannt</span></div>
-            <div class="info-row"><span>Abo:</span> <span id="res-plan">Prämie</span></div>
-            <div class="info-row"><span>Profile:</span> <span id="res-profiles">1</span></div>
         </div>
 
         <div style="font-weight:bold; margin-bottom:10px; text-align:left;">Wählen Sie Ihr Gerät</div>
@@ -81,7 +81,7 @@
 
         <div class="link-display" id="res-link">Link wird generiert...</div>
 
-        <button class="btn-orange" onclick="copyLink()">📋 Link Kopieren</button>
+        <button class="btn-orange" onclick="copyLink()">📋 Daten Kopieren</button>
         <button class="btn-green" onclick="openLink()">🚀 Netflix Öffnen</button>
         <button class="btn-gray" onclick="replaceAccount()">🔄 Account tot? Ersetzen</button>
         
@@ -126,12 +126,17 @@
                 currentData = data.data;
                 currentPlatform = data.platform || 'netflix';
                 
-                if(data.meta) {
-                    document.getElementById('res-email').innerText = data.meta.email || 'Versteckt';
-                    document.getElementById('res-country').innerText = data.meta.country || 'Unbekannt';
-                    document.getElementById('res-plan').innerText = data.meta.plan || 'Prämie';
-                    document.getElementById('res-profiles').innerText = data.meta.profiles ? data.meta.profiles.length : '1';
+                if(currentData.includes(':') && currentData.includes('@')) {
+                    document.getElementById('res-type').innerText = "E-Mail Login";
+                    let parts = currentData.split(':');
+                    document.getElementById('res-email').innerText = parts[0];
+                    document.getElementById('res-pass').innerText = parts[1] || 'Unbekannt';
+                } else {
+                    document.getElementById('res-type').innerText = "Direkter Link";
+                    document.getElementById('res-email').innerText = "Versteckt";
+                    document.getElementById('res-pass').innerText = "Keins nötig";
                 }
+                document.getElementById('res-country').innerText = data.meta?.country || 'Unbekannt';
                 
                 updateDisplayLink();
             } else {
@@ -162,7 +167,7 @@
             } else if (selectedDevice === 'tv') {
                 document.getElementById('res-link').innerText = `https://www.netflix.com/tv2?nftoken=${token}`;
             } else {
-                document.getElementById('res-link').innerText = baseLink; // Standard PC
+                document.getElementById('res-link').innerText = baseLink; 
             }
         } else {
             document.getElementById('res-link').innerText = baseLink;
@@ -172,7 +177,7 @@
     function copyLink() {
         const link = document.getElementById('res-link').innerText;
         navigator.clipboard.writeText(link);
-        alert("Link in die Zwischenablage kopiert!");
+        alert("Daten in die Zwischenablage kopiert!");
     }
 
     function openLink() {
@@ -180,7 +185,7 @@
         if (link.startsWith('http')) {
             window.open(link, '_blank');
         } else {
-            alert("Kein gültiger Link gefunden.");
+            alert("Es ist ein E-Mail Login. Bitte kopiere die Daten!");
         }
     }
 
@@ -191,13 +196,22 @@
         try {
             const res = await fetch('/api/replace', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key: currentKey })
+                body: JSON.stringify({ key: currentKey, platform: currentPlatform })
             });
             const data = await res.json();
             
             if (data.success) {
                 currentData = data.data;
+                if(currentData.includes(':') && currentData.includes('@')) {
+                    document.getElementById('res-type').innerText = "E-Mail Login";
+                    let parts = currentData.split(':');
+                    document.getElementById('res-email').innerText = parts[0];
+                    document.getElementById('res-pass').innerText = parts[1] || 'Unbekannt';
+                } else {
+                    document.getElementById('res-type').innerText = "Direkter Link";
+                }
                 updateDisplayLink();
+                
                 msg.innerText = "Account erfolgreich ersetzt!";
                 msg.style.color = "#22c55e";
                 msg.classList.remove('hidden');
