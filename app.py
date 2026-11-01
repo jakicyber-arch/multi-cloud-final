@@ -14,7 +14,7 @@ app = Flask(__name__)
 # DEIN GODDROP BOT TOKEN
 BOT_TOKEN = '8980059554:AAGi4797fL5HA4HIfFO74HFhEEmt6A2OoUQ'
 
-# LÖSCHT ALLE ALTEN VERBINDUNGEN BEVOR DER BOT STARTET (Verhindert 409 Fehler)
+# LÖSCHT ALLE ALTEN VERBINDUNGEN BEVOR DER BOT STARTET
 try:
     requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset=-1", timeout=5)
     time.sleep(2)
@@ -23,9 +23,9 @@ except:
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# DEINE SUPABASE DATEN
+# SUPABASE DATEN (URL bleibt, Key kommt aus Render)
 SUPABASE_URL = "https://drrbibjafmqcxqhxswfy.supabase.co" 
-SUPABASE_KEY = "sb_secret_8v78Z65NYG5BHQvCciywbQ_KSUWQuO_"
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
 def get_headers():
     return {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "return=representation"}
