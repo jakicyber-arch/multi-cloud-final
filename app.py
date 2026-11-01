@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-# DEIN NEUER BOT TOKEN
+# CLOUD BOT TOKEN (Läuft 24/7 auf Render)
 BOT_TOKEN = '8980059554:AAGi4797fL5HA4HIfFO74HFhEEmt6A2OoUQ'
 bot = telebot.TeleBot(BOT_TOKEN)
 
