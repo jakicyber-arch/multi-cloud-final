@@ -3,54 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Netflix Link Drop</title>
+    <title>Cloud Key Drop</title>
     <style>
-        body { background: #0f0f11; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: #18181b; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid #27272a; text-align: center; }
-        input { width: 90%; padding: 12px; background: #09090b; border: 1px solid #3f3f46; color: #fff; border-radius: 6px; margin-bottom: 15px; text-align: center; font-size: 16px; text-transform: uppercase; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; color: white; }
+        body { background: #0f0f11; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { background: #18181b; padding: 25px; border-radius: 16px; width: 100%; max-width: 420px; border: 1px solid #27272a; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .logo-area { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
+        .logo-icon { background: #e50914; color: white; font-weight: bold; font-size: 24px; padding: 8px 12px; border-radius: 8px; }
+        .logo-text { font-size: 24px; font-weight: bold; }
+        .badge { background: #27272a; color: #a1a1aa; font-size: 12px; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 15px; }
+        
+        .input-group { position: relative; margin-bottom: 15px; }
+        .input-group input { width: 100%; padding: 14px; background: #09090b; border: 1px solid #3f3f46; color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
+        
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        .btn-red { background: #e50914; color: white; }
+        .btn-green { background: #22c55e; color: white; }
+        .btn-orange { background: #f59e0b; color: white; }
+        .btn-gray { background: #27272a; color: #fff; border: 1px solid #3f3f46; }
+        
         .hidden { display: none; }
-        .btn-red { background: #e50914; }
-        .btn-green { background: #22c55e; }
-        .btn-orange { background: #f59e0b; }
-        .link-box { background: #27272a; padding: 15px; border-radius: 6px; margin: 15px 0; font-size: 12px; word-break: break-all; border-left: 4px solid #22c55e; text-align: left; color: #a1a1aa; }
+        .info-box { background: #27272a; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; border-left: 4px solid #e50914; text-align: left; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; color: #a1a1aa; }
+        .info-row span:last-child { color: #fff; font-weight: bold; }
+        
+        .device-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px; margin-bottom: 15px; }
+        .device-btn { background: #09090b; border: 1px solid #3f3f46; border-radius: 8px; padding: 15px 5px; text-align: center; cursor: pointer; font-size: 12px; color: #a1a1aa; transition: all 0.2s; }
+        .device-btn:hover { border-color: #e50914; color: #fff; }
+        .device-btn.active { border-color: #e50914; background: #27272a; color: #fff; }
+        .device-icon { font-size: 20px; margin-bottom: 5px; display: block; }
+        
+        .link-display { background: #09090b; padding: 12px; border-radius: 6px; font-size: 12px; word-break: break-all; margin-bottom: 15px; border: 1px dashed #3f3f46; color: #a1a1aa; text-align: left; }
+        
+        .footer { text-align: center; color: #52525b; font-size: 11px; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Netflix Link</h1>
-        <div id="input-view">
-            <input type="text" id="key-input" placeholder="CLM-XXXXXX">
-            <button class="btn-red" onclick="claim()">Einlösen</button>
-            <p id="err-msg" class="hidden" style="color:#ef4444; font-size:14px;"></p>
+
+<div class="container">
+    <div class="header">
+        <div class="logo-area">
+            <div class="logo-icon">CK</div>
+            <div class="logo-text">Cloud Key</div>
         </div>
-        
-        <div id="result-view" class="hidden">
-            <p style="color:#22c55e; font-weight: bold; margin-top:0;">Dein Account ist bereit!</p>
-            <div class="link-box" id="link-display"></div>
-            
-            <button class="btn-green" onclick="openLink()">🚀 Netflix öffnen</button>
-            <button class="btn-orange" onclick="replaceAccount()">🔄 Account tot? Ersetzen</button>
-            <p id="replace-msg" class="hidden" style="color:#22c55e; font-size:14px; margin-top: 10px;"></p>
-        </div>
+        <div class="badge">PRÄMIE</div>
     </div>
 
-    <script>
-        let currentKey = "";
-        let currentLink = "";
+    <!-- ANSICHT 1: EINGABE -->
+    <div id="view-input">
+        <div class="input-group">
+            <input type="text" id="key-input" placeholder="KEY EINGEBEN (CLM-XXXXXX)">
+        </div>
+        <button class="btn-red" onclick="claimKey()">Key Einlösen</button>
+        <p id="err-msg" class="hidden" style="color:#ef4444; font-size:14px; text-align:center;"></p>
+    </div>
 
-        window.onload = function() {
-            const savedKey = localStorage.getItem('netflix_key');
-            if (savedKey) {
-                document.getElementById('key-input').value = savedKey;
-                claim(); 
-            }
+    <!-- ANSICHT 2: ERGEBNIS -->
+    <div id="view-result" class="hidden">
+        <div class="info-box">
+            <div class="info-row"><span>E-Mail:</span> <span id="res-email">Versteckt</span></div>
+            <div class="info-row"><span>Land:</span> <span id="res-country">Unbekannt</span></div>
+            <div class="info-row"><span>Abo:</span> <span id="res-plan">Prämie</span></div>
+            <div class="info-row"><span>Profile:</span> <span id="res-profiles">1</span></div>
+        </div>
+
+        <div style="font-weight:bold; margin-bottom:10px; text-align:left;">Wählen Sie Ihr Gerät</div>
+        <div class="device-grid">
+            <div class="device-btn active" onclick="selectDevice(this, 'pc')">
+                <span class="device-icon">💻</span> PC
+            </div>
+            <div class="device-btn" onclick="selectDevice(this, 'mobile')">
+                <span class="device-icon">📱</span> Handy
+            </div>
+            <div class="device-btn" onclick="selectDevice(this, 'tv')">
+                <span class="device-icon">📺</span> TV
+            </div>
+        </div>
+
+        <div class="link-display" id="res-link">Link wird generiert...</div>
+
+        <button class="btn-orange" onclick="copyLink()">📋 Link Kopieren</button>
+        <button class="btn-green" onclick="openLink()">🚀 Netflix Öffnen</button>
+        <button class="btn-gray" onclick="replaceAccount()">🔄 Account tot? Ersetzen</button>
+        
+        <p id="replace-msg" class="hidden" style="color:#22c55e; font-size:13px; text-align:center; margin-top:10px;"></p>
+    </div>
+
+    <div class="footer">Cloud Key © 2026</div>
+</div>
+
+<script>
+    let currentKey = "";
+    let currentData = "";
+    let currentPlatform = "netflix";
+    let selectedDevice = "pc";
+
+    window.onload = function() {
+        const savedKey = localStorage.getItem('cloud_key');
+        if (savedKey) {
+            document.getElementById('key-input').value = savedKey;
+            claimKey(); 
         }
+    }
 
-        async function claim() {
-            currentKey = document.getElementById('key-input').value.trim();
-            localStorage.setItem('netflix_key', currentKey); 
+    async function claimKey() {
+        currentKey = document.getElementById('key-input').value.trim();
+        if(!currentKey) return;
+        
+        localStorage.setItem('cloud_key', currentKey); 
+        const errMsg = document.getElementById('err-msg');
+        errMsg.classList.add('hidden');
 
+        try {
             const res = await fetch('/api/claim', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ key: currentKey })
@@ -58,26 +123,74 @@
             const data = await res.json();
             
             if (data.success) {
-                document.getElementById('input-view').classList.add('hidden');
-                document.getElementById('result-view').classList.remove('hidden');
-                currentLink = data.data;
-                document.getElementById('link-display').innerText = currentLink;
+                document.getElementById('view-input').classList.add('hidden');
+                document.getElementById('view-result').classList.remove('hidden');
+                currentData = data.data;
+                currentPlatform = data.platform || 'netflix';
+                
+                if(data.meta) {
+                    document.getElementById('res-email').innerText = data.meta.email || 'Versteckt';
+                    document.getElementById('res-country').innerText = data.meta.country || 'Unbekannt';
+                    document.getElementById('res-plan').innerText = data.meta.plan || 'Prämie';
+                    document.getElementById('res-profiles').innerText = data.meta.profiles ? data.meta.profiles.length : '1';
+                }
+                
+                updateDisplayLink();
             } else {
-                const err = document.getElementById('err-msg');
-                err.innerText = data.msg;
-                err.classList.remove('hidden');
-                localStorage.removeItem('netflix_key'); 
+                errMsg.innerText = data.msg;
+                errMsg.classList.remove('hidden');
+                localStorage.removeItem('cloud_key'); 
             }
+        } catch(e) {
+            errMsg.innerText = "Verbindungsfehler. Versuchen Sie es erneut.";
+            errMsg.classList.remove('hidden');
         }
+    }
 
-        function openLink() {
-            if (currentLink) window.open(currentLink, '_blank');
+    function selectDevice(el, device) {
+        document.querySelectorAll('.device-btn').forEach(btn => btn.classList.remove('active'));
+        el.classList.add('active');
+        selectedDevice = device;
+        updateDisplayLink();
+    }
+
+    function updateDisplayLink() {
+        let baseLink = currentData;
+        
+        if (baseLink.includes('tv2?nftoken=') || baseLink.includes('browse?nftoken=')) {
+            let token = baseLink.split('nftoken=')[1];
+            if (selectedDevice === 'mobile') {
+                document.getElementById('res-link').innerText = `https://www.netflix.com/browse?nftoken=${token}`;
+            } else if (selectedDevice === 'tv') {
+                document.getElementById('res-link').innerText = `https://www.netflix.com/tv2?nftoken=${token}`;
+            } else {
+                document.getElementById('res-link').innerText = baseLink; // Standard PC
+            }
+        } else {
+            document.getElementById('res-link').innerText = baseLink;
         }
+    }
 
-        async function replaceAccount() {
-            const msg = document.getElementById('replace-msg');
-            msg.classList.add('hidden');
-            
+    function copyLink() {
+        const link = document.getElementById('res-link').innerText;
+        navigator.clipboard.writeText(link);
+        alert("Link in die Zwischenablage kopiert!");
+    }
+
+    function openLink() {
+        const link = document.getElementById('res-link').innerText;
+        if (link.startsWith('http')) {
+            window.open(link, '_blank');
+        } else {
+            alert("Kein gültiger Link gefunden.");
+        }
+    }
+
+    async function replaceAccount() {
+        const msg = document.getElementById('replace-msg');
+        msg.classList.add('hidden');
+        
+        try {
             const res = await fetch('/api/replace', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ key: currentKey })
@@ -85,8 +198,8 @@
             const data = await res.json();
             
             if (data.success) {
-                currentLink = data.data;
-                document.getElementById('link-display').innerText = currentLink;
+                currentData = data.data;
+                updateDisplayLink();
                 msg.innerText = "Account erfolgreich ersetzt!";
                 msg.style.color = "#22c55e";
                 msg.classList.remove('hidden');
@@ -95,7 +208,13 @@
                 msg.style.color = "#ef4444";
                 msg.classList.remove('hidden');
             }
+        } catch(e) {
+            msg.innerText = "Fehler beim Ersetzen des Accounts.";
+            msg.style.color = "#ef4444";
+            msg.classList.remove('hidden');
         }
-    </script>
+    }
+</script>
+
 </body>
 </html>
