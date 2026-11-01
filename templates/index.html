@@ -207,8 +207,8 @@
                     document.getElementById('device-area').classList.add('hidden');
                 } else {
                     document.getElementById('res-type').innerText = "Direkter Link";
-                    document.getElementById('res-email').innerText = "Versteckt";
-                    document.getElementById('res-pass').innerText = "Keins nötig";
+                    document.getElementById('res-email').innerText = "Nicht verfügbar (Token)";
+                    document.getElementById('res-pass').innerText = "Nicht verfügbar (Token)";
                     
                     if(currentPlatform === 'netflix') {
                         document.getElementById('device-area').classList.remove('hidden');
@@ -232,14 +232,18 @@
     function updateDisplayLink() {
         let baseLink = currentData;
         
-        if (baseLink.includes('tv2?nftoken=') || baseLink.includes('browse?nftoken=')) {
-            let token = baseLink.split('nftoken=')[1];
-            if (selectedDevice === 'mobile') {
-                document.getElementById('res-link').innerText = `https://www.netflix.com/browse?nftoken=${token}`;
-            } else if (selectedDevice === 'tv') {
-                document.getElementById('res-link').innerText = `https://www.netflix.com/tv2?nftoken=${token}`;
-            } else {
-                document.getElementById('res-link').innerText = baseLink; 
+        if (baseLink.includes('nftoken=')) {
+            try {
+                let token = baseLink.split('nftoken=')[1].split('&')[0];
+                if (selectedDevice === 'mobile') {
+                    document.getElementById('res-link').innerText = `https://www.netflix.com/browse?nftoken=${token}&mobile=true`;
+                } else if (selectedDevice === 'tv') {
+                    document.getElementById('res-link').innerText = `https://www.netflix.com/tv2?nftoken=${token}`;
+                } else {
+                    document.getElementById('res-link').innerText = `https://www.netflix.com/browse?nftoken=${token}`;
+                }
+            } catch(e) {
+                document.getElementById('res-link').innerText = baseLink;
             }
         } else {
             document.getElementById('res-link').innerText = baseLink;
