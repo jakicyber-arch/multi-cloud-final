@@ -23,14 +23,13 @@ except: pass
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# DEINE SUPABASE DATEN
+# SUPABASE DATEN (Service Role Key)
 SUPABASE_URL = "https://drrbibjafmqcxqhxswfy.supabase.co" 
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRycmJpYmphZm1xY3hxaHhzd2Z5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzQ2NjQ2NiwiZXhwIjoyMTA5MDQyNDY2fQ.XElFDbLqZT_bbRP9EomuZlH7gbflUni46fvGvm9hleo"
 
 def get_headers():
     return {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "return=representation"}
 
-# ALLE 23 KANÄLE
 TELEGRAM_CHANNELS = [
     "freetohell", "Crackers_Official", "internettweaksforum", "netflix_disney_hotstar_nord", 
     "mrplan254", "DARKNET240", "PremiumAccounts_Free", "Combos", "Netflix_Cookies", 
@@ -91,7 +90,6 @@ def grabber_loop():
     while True:
         found_raw = []
         
-        # Alle Telegram Kanäle gleichzeitig scannen
         with ThreadPoolExecutor(max_workers=10) as executor:
             results = executor.map(scan_telegram, TELEGRAM_CHANNELS)
             for res in results:
