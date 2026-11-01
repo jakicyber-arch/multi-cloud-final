@@ -11,17 +11,13 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-# ==========================================
-# HIER MUSS DEIN NEUER TOKEN STEHEN
-# ==========================================
-BOT_TOKEN = '8980065954:AAGi4797fL5HA4HlFFO74HFhEEmt6A20oUQ'
+# DEIN NEUER BOT TOKEN
+BOT_TOKEN = '8980059554:AAGi4797fL5HA4HIfFO74HFhEEmt6A2OoUQ'
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# ==========================================
-# SUPABASE DATEN
-# ==========================================
+# DEINE SUPABASE DATEN
 SUPABASE_URL = "https://drrbibjafmqcxqhxswfy.supabase.co" 
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRycmJpYmphZm1xY3hxaHhzd2Z5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzQ2NjQ2NiwiZXhwIjoyMTA5MDQyNDY2fQ.XElFDbLqZT_bbRP9EomuZlH7gbflUni46fvGvm9hleo"
+SUPABASE_KEY = "sb_secret_m12I5KDxvlFQlnWnclKBCA_GDh4wlkj"
 
 def get_headers():
     return {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "return=representation"}
@@ -71,27 +67,22 @@ def grabber_loop():
         time.sleep(300) 
 
 def bot_loop():
-    print("Starte Bot mit Token:", BOT_TOKEN) # Gibt den Token in den Render-Logs aus!
-    try:
-        @bot.message_handler(commands=['start', 'help'])
-        def send_welcome(message):
-            bot.reply_to(message, "Willkommen!\nSende /key netflix oder /key spotify")
+    @bot.message_handler(commands=['start', 'help'])
+    def send_welcome(message):
+        bot.reply_to(message, "Willkommen!\nSende /key netflix oder /key spotify")
 
-        @bot.message_handler(commands=['key'])
-        def send_key(message):
-            try:
-                args = message.text.split()
-                platform = args[1].lower() if len(args) > 1 else "netflix" 
-                r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.{platform}&limit=1", headers=get_headers())
-                if r.status_code == 200 and r.json():
-                    bot.reply_to(message, f"Dein {platform.capitalize()} Key: `{r.json()[0]['key']}`\n\nLöse ihn ein: https://multi-cloud-final.onrender.com", parse_mode='Markdown')
-                else:
-                    bot.reply_to(message, f"❌ Keine {platform.capitalize()} Accounts verfügbar.")
-            except Exception as e: bot.reply_to(message, f"Fehler: {e}")
-        
-        bot.polling(none_stop=True)
-    except Exception as e:
-        print("BOT START FEHLER:", e)
+    @bot.message_handler(commands=['key'])
+    def send_key(message):
+        try:
+            args = message.text.split()
+            platform = args[1].lower() if len(args) > 1 else "netflix" 
+            r = requests.get(f"{SUPABASE_URL}/rest/v1/keys?data=not.is.null&used=eq.false&platform=eq.{platform}&limit=1", headers=get_headers())
+            if r.status_code == 200 and r.json():
+                bot.reply_to(message, f"Dein {platform.capitalize()} Key: `{r.json()[0]['key']}`\n\nLöse ihn ein: https://multi-cloud-final.onrender.com", parse_mode='Markdown')
+            else:
+                bot.reply_to(message, f"❌ Keine {platform.capitalize()} Accounts verfügbar.")
+        except Exception as e: bot.reply_to(message, f"Fehler: {e}")
+    bot.polling(none_stop=True)
 
 threading.Thread(target=grabber_loop, daemon=True).start()
 threading.Thread(target=bot_loop, daemon=True).start()
