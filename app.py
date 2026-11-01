@@ -11,8 +11,13 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-# DEIN NEUER GODDROP BOT TOKEN
+# DEIN GODDROP BOT TOKEN
 BOT_TOKEN = '8980059554:AAGi4797fL5HA4HIfFO74HFhEEmt6A2OoUQ'
+
+# LÖSCHT ALLE ALTEN VERBINDUNGEN BEVOR DER BOT STARTET
+requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset=-1")
+time.sleep(2)
+
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # DEINE SUPABASE DATEN
@@ -23,8 +28,6 @@ def get_headers():
     return {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "return=representation"}
 
 TELEGRAM_CHANNELS = ["freetohell", "Crackers_Official", "internettweaksforum", "netflix_disney_hotstar_nord", "mrplan254", "DARKNET240", "PremiumAccounts_Free", "Combos"]
-REDDIT_SUBS = ["accountsharing", "AccountShare", "subscriptionsharing"]
-
 PATTERN = re.compile(r'((?:NetflixId|SecureNetflixId|sp_dc|sp_key|token)=[^;]+)', re.IGNORECASE)
 
 def grabber_loop():
