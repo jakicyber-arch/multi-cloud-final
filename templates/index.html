@@ -1,307 +1,33 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Key Drop</title>
-    <style>
-        body { background: #0f0f11; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        .container { background: #18181b; padding: 25px; border-radius: 16px; width: 100%; max-width: 420px; border: 1px solid #27272a; position: relative; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .logo-area { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
-        .logo-icon { background: #e50914; color: white; font-weight: bold; font-size: 24px; padding: 8px 12px; border-radius: 8px; }
-        .logo-text { font-size: 24px; font-weight: bold; }
-        
-        .admin-btn { position: absolute; top: 15px; right: 15px; background: #27272a; color: #a1a1aa; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        
-        .service-selector { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 15px; }
-        .service-btn { background: #09090b; border: 1px solid #3f3f46; border-radius: 6px; padding: 8px; text-align: center; cursor: pointer; font-size: 11px; color: #a1a1aa; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .service-btn.active { border-color: #e50914; background: #27272a; color: #fff; }
-        .service-btn span { font-size: 16px; }
-
-        .device-selector { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; margin-top: 15px; }
-        .device-btn { background: #09090b; border: 1px solid #3f3f46; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; font-size: 12px; color: #a1a1aa; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .device-btn.active { border-color: #e50914; background: #27272a; color: #fff; }
-        .device-btn span { font-size: 20px; }
-
-        .input-group { position: relative; margin-bottom: 15px; }
-        .input-group input { width: 100%; padding: 14px; background: #09090b; border: 1px solid #3f3f46; color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-transform: uppercase; text-align: center; letter-spacing: 1px; }
-        
-        button.action-btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: opacity 0.2s; }
-        .btn-red { background: #e50914; color: white; }
-        .btn-green { background: #22c55e; color: white; }
-        .btn-orange { background: #f59e0b; color: white; }
-        .btn-gray { background: #27272a; color: #fff; border: 1px solid #3f3f46; }
-        
-        .hidden { display: none; }
-        .info-box { background: #27272a; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; border-left: 4px solid #e50914; text-align: left; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; color: #a1a1aa; }
-        .info-row span:last-child { color: #fff; font-weight: bold; }
-        
-        .link-display { background: #09090b; padding: 12px; border-radius: 6px; font-size: 12px; word-break: break-all; margin-bottom: 15px; border: 1px dashed #3f3f46; color: #a1a1aa; text-align: left; }
-        .footer { text-align: center; color: #52525b; font-size: 11px; margin-top: 20px; }
-    </style>
+    <!-- ... Dein ganzer CSS-Style bleibt genau hier oben ... -->
 </head>
 <body>
 
-<div class="container">
-    <button class="admin-btn" onclick="toggleAdmin()">Admin</button>
-    
-    <div class="header">
-        <div class="logo-area">
-            <div class="logo-icon">CK</div>
-            <div class="logo-text">Cloud Key</div>
+    <!-- 1. Das Menü und der Hintergrund -->
+    <button class="hamburger-btn" id="hbg" onclick="toggleDrawer()">...</button>
+    <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+    <aside class="drawer" id="drawer">...</aside>
+
+    <!-- 2. Der Inhalt (Buttons, Eingabefelder) -->
+    <div class="container">
+        <div class="center" style="max-width:480px">
+            <div class="card">
+                <!-- ... Der ganze Formular-Kram ... -->
+            </div>
         </div>
     </div>
 
-    <div id="admin-view" class="hidden">
-        <input type="password" id="admin-pass" placeholder="Admin Passwort" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid #3f3f46; background:#09090b; color:#fff;">
-        <button class="action-btn btn-gray" onclick="loginAdmin()">Login</button>
-    </div>
+    <footer>LowKey © 2026</footer>
 
-    <div id="user-view" class="hidden">
-        <div id="view-input">
-            <div style="font-weight:bold; margin-bottom:8px; text-align:left; font-size:14px;">Dienst auswählen</div>
-            <div class="service-selector">
-                <div class="service-btn active" onclick="selectService(this, 'netflix')"><span>🍿</span> Netflix</div>
-                <div class="service-btn" onclick="selectService(this, 'spotify')"><span>🎵</span> Spotify</div>
-                <div class="service-btn" onclick="selectService(this, 'disney')"><span>🏰</span> Disney</div>
-                <div class="service-btn" onclick="selectService(this, 'rtl')"><span>📺</span> RTL+</div>
-                <div class="service-btn" onclick="selectService(this, 'crunchyroll')"><span>🍥</span> Crunchy</div>
-                <div class="service-btn" onclick="selectService(this, 'steam')"><span>🎮</span> Steam</div>
-                <div class="service-btn" onclick="selectService(this, 'minecraft')"><span>⛏️</span> MC</div>
-                <div class="service-btn" onclick="selectService(this, 'chatgpt')"><span>🤖</span> GPT</div>
-            </div>
-
-            <div class="input-group">
-                <input type="text" id="key-input" placeholder="KEY EINGEBEN (CLM-XXXXXX)">
-            </div>
-            <button class="action-btn btn-red" onclick="claimKey()">Key Einlösen</button>
-            <p id="err-msg" class="hidden" style="color:#ef4444; font-size:14px; text-align:center;"></p>
-        </div>
-
-        <div id="view-result" class="hidden">
-            <div class="info-box">
-                <div class="info-row"><span>Dienst:</span> <span id="res-platform" style="text-transform: uppercase;">-</span></div>
-                <div class="info-row"><span>Typ:</span> <span id="res-type">-</span></div>
-                <div class="info-row"><span>E-Mail:</span> <span id="res-email">Versteckt</span></div>
-                <div class="info-row"><span>Passwort:</span> <span id="res-pass">-</span></div>
-            </div>
-
-            <div id="device-area" class="hidden">
-                <div style="font-weight:bold; margin-bottom:8px; text-align:left; font-size:14px;">Wählen Sie Ihr Gerät</div>
-                <div class="device-selector">
-                    <div class="device-btn active" onclick="selectDevice(this, 'pc')"><span>💻</span> PC</div>
-                    <div class="device-btn" onclick="selectDevice(this, 'mobile')"><span>📱</span> Handy</div>
-                    <div class="device-btn" onclick="selectDevice(this, 'tv')"><span>📺</span> TV</div>
-                </div>
-            </div>
-
-            <div class="link-display" id="res-link">Link wird generiert...</div>
-
-            <button class="action-btn btn-orange" onclick="copyLink()">📋 Daten Kopieren</button>
-            <button class="action-btn btn-green" onclick="openLink()">🚀 Öffnen</button>
-            <button class="action-btn btn-gray" id="replace-btn" onclick="replaceAccount()">🔄 Account tot? Ersetzen</button>
-            
-            <p id="replace-msg" class="hidden" style="color:#22c55e; font-size:13px; text-align:center; margin-top:10px;"></p>
-        </div>
-    </div>
-
-    <div class="footer">Cloud Key © 2026</div>
-</div>
-
-<script>
-    let currentKey = "";
-    let currentData = "";
-    let currentPlatform = "netflix";
-    let selectedDevice = "pc";
-    let isAdmin = false;
-
-    window.onload = function() {
-        const savedKey = localStorage.getItem('cloud_key');
-        if (savedKey) {
-            document.getElementById('key-input').value = savedKey;
-        }
-        checkAdmin();
-    }
-
-    function toggleAdmin() {
-        if(isAdmin) {
-            isAdmin = false;
-            localStorage.removeItem('is_admin');
-            document.getElementById('user-view').classList.add('hidden');
-            document.getElementById('admin-view').classList.remove('hidden');
-        } else {
-            document.getElementById('user-view').classList.add('hidden');
-            document.getElementById('admin-view').classList.remove('hidden');
-        }
-    }
-
-    function loginAdmin() {
-        const pass = document.getElementById('admin-pass').value;
-        if(pass === 'admin') {
-            isAdmin = true;
-            localStorage.setItem('is_admin', 'true');
-            document.getElementById('admin-view').classList.add('hidden');
-            document.getElementById('user-view').classList.remove('hidden');
-            checkAdmin();
-        } else {
-            alert("Falsches Passwort!");
-        }
-    }
-
-    function checkAdmin() {
-        if(localStorage.getItem('is_admin') === 'true') {
-            isAdmin = true;
-            document.getElementById('admin-view').classList.add('hidden');
-            document.getElementById('user-view').classList.remove('hidden');
-            document.getElementById('replace-btn').classList.remove('hidden');
-        } else {
-            document.getElementById('replace-btn').classList.add('hidden');
-            document.getElementById('admin-view').classList.add('hidden');
-            document.getElementById('user-view').classList.remove('hidden');
-        }
-    }
-
-    function selectService(el, service) {
-        document.querySelectorAll('.service-btn').forEach(btn => btn.classList.remove('active'));
-        el.classList.add('active');
-        currentPlatform = service;
-    }
-
-    function selectDevice(el, device) {
-        document.querySelectorAll('.device-btn').forEach(btn => btn.classList.remove('active'));
-        el.classList.add('active');
-        selectedDevice = device;
-        updateDisplayLink();
-    }
-
-    async function claimKey() {
-        currentKey = document.getElementById('key-input').value.trim();
-        if(!currentKey) return;
-        
-        localStorage.setItem('cloud_key', currentKey); 
-        const errMsg = document.getElementById('err-msg');
-        errMsg.classList.add('hidden');
-
-        try {
-            const res = await fetch('/api/claim', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key: currentKey })
-            });
-            const data = await res.json();
-            
-            if (data.success) {
-                document.getElementById('view-input').classList.add('hidden');
-                document.getElementById('view-result').classList.remove('hidden');
-                currentData = data.data;
-                currentPlatform = data.platform || 'netflix';
-                
-                document.getElementById('res-platform').innerText = currentPlatform;
-                
-                if(currentData.includes(':') && currentData.includes('@')) {
-                    document.getElementById('res-type').innerText = "E-Mail Login";
-                    let parts = currentData.split(':');
-                    document.getElementById('res-email').innerText = parts[0];
-                    document.getElementById('res-pass').innerText = parts[1] || 'Unbekannt';
-                    document.getElementById('device-area').classList.add('hidden');
-                } else {
-                    document.getElementById('res-type').innerText = "Direkter Link";
-                    document.getElementById('res-email').innerText = "Nicht verfügbar (Token)";
-                    document.getElementById('res-pass').innerText = "Nicht verfügbar (Token)";
-                    
-                    if(currentPlatform === 'netflix') {
-                        document.getElementById('device-area').classList.remove('hidden');
-                    } else {
-                        document.getElementById('device-area').classList.add('hidden');
-                    }
-                }
-                
-                updateDisplayLink();
-            } else {
-                errMsg.innerText = data.msg;
-                errMsg.classList.remove('hidden');
-                localStorage.removeItem('cloud_key'); 
-            }
-        } catch(e) {
-            errMsg.innerText = "Verbindungsfehler. Versuchen Sie es erneut.";
-            errMsg.classList.remove('hidden');
-        }
-    }
-
-    function updateDisplayLink() {
-        let baseLink = currentData;
-        
-        if (baseLink.includes('nftoken=')) {
-            try {
-                let token = baseLink.split('nftoken=')[1].split('&')[0];
-                if (selectedDevice === 'mobile') {
-                    document.getElementById('res-link').innerText = `https://www.netflix.com/browse?nftoken=${token}&mobile=true`;
-                } else if (selectedDevice === 'tv') {
-                    document.getElementById('res-link').innerText = `https://www.netflix.com/tv2?nftoken=${token}`;
-                } else {
-                    document.getElementById('res-link').innerText = `https://www.netflix.com/browse?nftoken=${token}`;
-                }
-            } catch(e) {
-                document.getElementById('res-link').innerText = baseLink;
-            }
-        } else {
-            document.getElementById('res-link').innerText = baseLink;
-        }
-    }
-
-    function copyLink() {
-        navigator.clipboard.writeText(document.getElementById('res-link').innerText);
-        alert("Daten in die Zwischenablage kopiert!");
-    }
-
-    function openLink() {
-        const link = document.getElementById('res-link').innerText;
-        if (link.startsWith('http')) {
-            window.open(link, '_blank');
-        } else {
-            alert("Es ist ein E-Mail Login. Bitte kopiere die Daten!");
-        }
-    }
-
-    async function replaceAccount() {
-        const msg = document.getElementById('replace-msg');
-        msg.classList.add('hidden');
-        
-        try {
-            const res = await fetch('/api/replace', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key: currentKey, platform: currentPlatform })
-            });
-            const data = await res.json();
-            
-            if (data.success) {
-                currentData = data.data;
-                if(currentData.includes(':') && currentData.includes('@')) {
-                    document.getElementById('res-type').innerText = "E-Mail Login";
-                    let parts = currentData.split(':');
-                    document.getElementById('res-email').innerText = parts[0];
-                    document.getElementById('res-pass').innerText = parts[1] || 'Unbekannt';
-                } else {
-                    document.getElementById('res-type').innerText = "Direkter Link";
-                }
-                updateDisplayLink();
-                
-                msg.innerText = "Account erfolgreich ersetzt!";
-                msg.style.color = "#22c55e";
-                msg.classList.remove('hidden');
-            } else {
-                msg.innerText = data.msg;
-                msg.style.color = "#ef4444";
-                msg.classList.remove('hidden');
-            }
-        } catch(e) {
-            msg.innerText = "Fehler beim Ersetzen des Accounts.";
-            msg.style.color = "#ef4444";
-            msg.classList.remove('hidden');
-        }
-    }
-</script>
+    <!-- 3. DAS SCRIPT KOMMT GANZ NACH UNTEN! -->
+    <script>
+        // --- Hier ist dein ganzer JavaScript-Code drin ---
+        let currentKey = "";
+        let currentData = "";
+        // ... (der Rest deines Skripts)
+    </script>
 
 </body>
 </html>
