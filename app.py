@@ -17,7 +17,7 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 # DEINE SUPABASE DATEN
 SUPABASE_URL = "https://drrbibjafmqcxqhxswfy.supabase.co" 
-SUPABASE_KEY = "sb_secret_m12I5KDxvlFQlnWnclKBCA_GDh4wlkj"
+SUPABASE_KEY = "sb_secret_8v78Z65NYG5BHQvCciywbQ_KSUWQuO_"
 
 def get_headers():
     return {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "return=representation"}
@@ -46,6 +46,26 @@ def get_netflix_info(item):
         except: pass
     return {"email": "Hidden", "password": None, "country": "Unknown", "plan": "Premium", "profiles": []}
 
+def scrape_duckduckgo():
+    try:
+        r = requests.get('https://html.duckduckgo.com/html/?q=site:pastebin.com+"NetflixId="', timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+        soup = BeautifulSoup(r.text, 'html.parser')
+        for a in soup.select('.result__a')[:5]:
+            url = a['href']
+            if 'pastebin.com' in url and '/raw/' not in url:
+                raw_r = requests.get(url.replace('pastebin.com/', 'pastebin.com/raw/'), timeout=5)
+                if raw_r.status_code == 200: yield raw_r.text
+    except: pass
+
+def scrape_pastebin():
+    try:
+        r = requests.get("https://pastebin.com/archive", timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+        soup = BeautifulSoup(r.text, 'html.parser')
+        for link in soup.select('table.archive-table a')[:10]:
+            raw_r = requests.get("https://pastebin.com/raw/" + link['href'].strip('/'), timeout=5)
+            if raw_r.status_code == 200: yield raw_r.text
+    except: pass
+
 def grabber_loop():
     while True:
         found_raw = []
@@ -56,6 +76,16 @@ def grabber_loop():
                     item = m[0] if m[0] else (m[1] if m[1] else m[2])
                     if item and item not in found_raw: found_raw.append(item)
             except: pass
+
+        for text in scrape_duckduckgo():
+            for m in PATTERN.findall(text):
+                item = m[0] if m[0] else (m[1] if m[1] else m[2])
+                if item and item not in found_raw: found_raw.append(item)
+
+        for text in scrape_pastebin():
+            for m in PATTERN.findall(text):
+                item = m[0] if m[0] else (m[1] if m[1] else m[2])
+                if item and item not in found_raw: found_raw.append(item)
 
         if found_raw:
             for item in found_raw:
